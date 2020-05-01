@@ -3,7 +3,7 @@
 
 # In[6]:
 
-
+# imports 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -26,7 +26,7 @@ import random
 
 # In[4]:
 
-
+#********** Load gene expression data and response data and run pre-processing *********
 GDSCE = pd.read_csv("/home/hnoghabi/KDNN/GDSC.tsv", 
                     sep = "\t", index_col=0, decimal = ".")
 GDSCE.drop_duplicates(keep='last')
@@ -116,12 +116,12 @@ GDSCRv2 = GDSCR.loc[ls2,:]
 CCLEEv3 = CCLEEv2.loc[ls3,:]
 CCLERv2 = CCLER.loc[ls3,:]
 
+# Load in masks which are adjacency matrices for connections between layers 
 Mask1 = pd.read_csv("/home/hnoghabi/KDNN/M1New.csv", 
                     sep = ",", index_col=0, decimal = ".")
 Mask1.drop_duplicates(keep='last')
 Mask1 = Mask1.loc[~Mask1.index.duplicated(),:]
 Mask1 = Mask1.loc[:,~Mask1.columns.duplicated()]
-
 
 Mask2 = pd.read_csv("/home/hnoghabi/KDNN/M2New.csv", 
                     sep = ",", index_col=0, decimal = ".")
@@ -133,19 +133,13 @@ GDSCEv4 = GDSCEv3.loc[:,lsC]
 CCLEEv4 = CCLEEv3.loc[:,lsC]
 Mask1 = Mask1.loc[lsC,:]
 
-#drugs = ['Parthenolide','ATRA','Doxorubicin','Tamoxifen','lapatinib','Gefitinib',
-#         'BIBW2992','masitinib','17-AAG','GDC-0941','MK-2206','NVP-BEZ235','PLX4720', 'Erlotinib']
-#GDSCRv4 = GDSCRv2[drugs]
-#CCLERv4 = CCLERv2[drugs]
-#
-#GDSCRv4 = GDSCRv4.replace(to_replace ='NaN', value = GDSCRv4[GDSCRv4!='NaN'].mean())
-#CCLERv4 = CCLERv4.replace(to_replace ='NaN', value = CCLERv4[CCLERv4!='NaN'].mean())
-
+# focus on only these 11 drugs for which we have pathway connection data 
 drugs = ['ATRA', 'Doxorubicin', 'Tamoxifen', 'Gefitinib', 'BIBW2992','masitinib', '17-AAG', 'GDC-0941', 'MK-2206', 'AZD6244', 'PLX4720']
 drugIDs = ['15367', '28748', '41774', '49668', '61390', '63450', '64153', '65326', '67271','90227', '90295']
 GDSCRv3 = GDSCRv2[drugs]
 CCLERv3 = CCLERv2[drugs]
 
+# impute missing values 
 imputer1 = Imputer(missing_values='NaN', strategy='mean', axis=0)
 imputer1 = imputer1.fit(GDSCRv3[drugs].values)
 GDSCRv4 = imputer1.transform(GDSCRv3[drugs].values)
@@ -168,7 +162,7 @@ Mask3 = Mask3.loc[lsD,drugIDs]
 
 # In[7]:
 
-
+# Hyperparameters
 ls_mb_size = [16, 32, 64]
 ls_lr = [0.5, 0.1, 0.05, 0.01, 0.001, 0.005, 0.0005, 0.0001,0.00005, 0.00001]
 ls_epoch = [20, 50, 10, 15, 30, 40, 60, 70, 80, 90, 100]
@@ -179,6 +173,7 @@ Mask1v2 = Mask1.values
 Mask2v2 = Mask2.values
 Mask3v2 = Mask3.values
 
+# create custom layers for applying the mask and making sparse connections 
 class CustomConnected(Dense):
 
     def __init__(self, units, Mask, **kwargs):
@@ -197,6 +192,7 @@ class CustomConnected(Dense):
 save_results_to1 = '/home/hnoghabi/KDNN/keras-Results/KFold-ECCB-BDKANN1V1/'
 save_results_to2 = '/home/hnoghabi/KDNN/keras-Results/KFold-ECCB-BDKANN1V1/'
 
+# Kfold cross validation for hyperparameter tuning 
 kf = KFold(n_splits=10, random_state=42, shuffle=True)
 for iters in range(max_iter):
     
